@@ -131,6 +131,8 @@ int main(void) {
         count2 = 0;
       }
       CombineLEDTick();
+      while(!TimerFlag);
+      TimerFlag = 0;
     }
     return 1;
 }
