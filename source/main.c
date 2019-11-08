@@ -50,9 +50,12 @@ void TimerSet(unsigned long M) {
 
 enum ThreeLEDStates{One, Two, Three} ThreeLEDState;
 enum BlinkingLEDStates{Right, Left} BlinkingLEDState;
+enum PWMToggleStates{Wait, High, Low} PWMToggleState;
 enum CombineLEDStates{Do} CombineLEDState;
 unsigned char threeLED = 0;
 unsigned char blinkingLED = 0;
+unsigned char speakerToggle = 0;
+unsigned char input;
 
 void ThreeLEDTick() {
     switch(ThreeLEDState) { //Transitions
@@ -93,7 +96,45 @@ void BlinkingLEDTick() {
         blinkingLED = 0x04;
         break;
       case Left:
-        blinkingLED = 0x01;
+        blinkingLED = 0x00;
+        break;
+    }
+}
+
+void PWMToggleTick() {
+    input = ~PINA & 0x04;
+    switch(PWMToggleState) {
+      case Wait:
+        if(!input) {
+          PWMToggleState = Wait;
+        } else {
+          PWMToggleState = High;
+        }
+        break;
+      case High:
+        if(!input) {
+          PWMToggleState = Wait;
+        } else {
+          PWMToggleState = Low;
+        }
+        break;
+      case Low:
+        if(!input) {
+          PWMToggleState = Wait;
+        } else {
+          PWMToggleState = High;
+        }
+        break;
+    }
+    switch(PWMToggleState) {
+      case Wait:
+        speakerToggle = 0;
+        break;
+      case High:
+        speakerToggle = 0x10;
+        break;
+      case Low:
+        speakerToggle = 0;
         break;
     }
 }
@@ -106,19 +147,21 @@ void CombineLEDTick() {
     }
     switch(CombineLEDState) {
       case Do:
-        PORTB = threeLED | blinkingLED;
+        PORTB = threeLED | blinkingLED | speakerToggle;
         break;
     }
 } 
 
 int main(void) {
+    DDRA = 0x00; PORTA = 0xFF;
     DDRB = 0xFF; PORTB = 0x00;
     unsigned long count1 = 0;
     unsigned long count2 = 0;
+    unsigned long count3 = 0;
     TimerSet(1);
     TimerOn();
     while (1) {
-      if (count1 < 1000) {
+      if (count1 < 300) {
         count1++;
       } else {
         ThreeLEDTick();
@@ -129,6 +172,12 @@ int main(void) {
       } else {
         BlinkingLEDTick();
         count2 = 0;
+      }
+      if (count3 < 2) {
+        count3++;
+      } else {
+        PWMToggleTick();
+        count3 = 0;
       }
       CombineLEDTick();
     }

@@ -118,7 +118,7 @@ int main(void) {
     TimerSet(1);
     TimerOn();
     while (1) {
-      if (count1 < 1000) {
+      if (count1 < 300) {
         count1++;
       } else {
         ThreeLEDTick();
